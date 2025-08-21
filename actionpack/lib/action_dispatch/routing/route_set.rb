@@ -31,6 +31,19 @@ module ActionDispatch
       end
       # :enddoc:
 
+      def generate_path_with_cache(route_name, params)
+        @path_cache ||= LruCache.new(512)
+        cache_key = [route_name, params.sort].hash
+        @path_cache.get(cache_key) || begin
+          path = generate_path_without_cache(route_name, params)
+          @path_cache.set(cache_key, path)
+          path
+        end
+      end
+      
+      alias_method :generate_path_without_cache, :generate_path
+      alias_method :generate_path, :generate_path_with_cache
+
       # Since the router holds references to many parts of the system like engines,
       # controllers and the application itself, inspecting the route set can actually
       # be really slow, therefore we default alias inspect to to_s.
